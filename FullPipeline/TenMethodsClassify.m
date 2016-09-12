@@ -1,23 +1,55 @@
-cd 'C:\MyWork\Stanford\Documents\ad_paper_data_figures\PaperData';
-load 'TrainingTestingDataLabels3sigma.mat';
-TrainingData = data(test_train ==1,:);
-TestingData = data(test_train ==0,:);
-TrainingLabels = labels(test_train==1);
-TestingLabels = labels(test_train==0);
-
+% % cd 'C:\MyWork\Stanford\Documents\ad_paper_data_figures\PaperData';
+% % load 'TrainingTestingDataLabels3sigma.mat';
+% % 
+% 
+% cd 'C:\MyWork\Stanford\Documents\ad_paper_data_figures\PaperData';
+% load NewDataLabels.mat
+% load 'C:\MyWork\Stanford\Documents\ad_paper_data_figures\PaperData\ADNC\ADNC_ind.mat';
+% k=10;
+% % for i=1:k
+% %     for j=1:length(AllTrainingData{i})
+% %         AllTrainingData{i}(j).IsTraining = 1;
+% %     end
+% % end
+% % for i=1:k
+% %     for j=1:length(AllTestingData{i})
+% %         AllTestingData{i}(j).IsTraining = 0;
+% %     end
+% % end
+% % for i=1:k
+% %     AllROIs{i} = [AllTrainingData{i}, AllTestingData{i}];
+% % end
+% % % 
+% % [ data,labels,test_train ] = TenMethodsPrepareDataForClassification( AllROIs);
+% max_data = max(abs(data));
+% data = data./(ones(size(data,1),1)*max_data);
+% TrainingData = data(test_train ==1,[1:30,41,42]);
+% TestingData = data(test_train ==0,[1:30,41,42]);
+% TrainingLabels = labels(test_train==1);
+% TestingLabels = labels(test_train==0);
+% % 
+% % 
+% % TrainingData = data(test_train ==1,:);
+% % TestingData = data(test_train ==0,:);
+% % TrainingLabels = labels(test_train==1);
+% % TestingLabels = labels(test_train==0);
+% 
+%data = data(:,[1:30,41,42]);
 
 numSubjects = size(data,1);
 numTraining = floor(0.5*numSubjects);
 numTesting = numSubjects - numTraining;
 classification_task = 'CNAD';%{'CNAD','CNMCIc','MCIcnc'};
 %feat = 32;
+%going backwards now
+ind = fliplr(ind);
 
 for feat = 1:32
 d_prime =[];c = [];sensitivity = [];specificity = [];err = [];w = [];
     fprintf('now calculating with %d features\n',feat)
 
 for num_run = 1:10
-    fprintf('now calculating run number %d\n',num_run)
+    fprintf('now calculating run number %d for feature number %d\n',num_run,feat)
     clear model trainData trainLabels testData testLabels predict_label best_C best_S cv_acc;
     randInd = randperm(numSubjects)';
     Data = data(randInd,:);
@@ -121,7 +153,7 @@ if(~is_multiclass)
     
     sensitivity(num_run) = tp/(tp+fn);
     
-    tn = length(find(testLabels == d_label & predict_label == n_label));%number of true positives
+    tn = length(find(testLabels == n_label & predict_label == n_label));%number of true positives
     fp = length(find(testLabels == n_label & predict_label == d_label));%number of false negatives
     specificity(num_run) = tn/(tn+fp);
     
@@ -139,6 +171,10 @@ if(~is_multiclass)
     end
     d_prime(num_run) = norminv(hr)-norminv(far);
     c(num_run) = -(norminv(hr)+norminv(far))/2;   %bias
+    ppv(num_run) = tp/(tp+fp);
+    npv(num_run) = tn/(tn+fn);
+    num_correct(num_run) =tp+tn; 
+    num_total(num_run) = length(testData);
     w(num_run,:) = model.w(1,:);
     %%
 else %multiclass
@@ -168,14 +204,22 @@ end
     
     
 end
-d_prime_feat(feat) = mean(d_prime)
-d_prime_feat_std(feat) = std(d_prime)
-sensitivity_feat(feat) = mean(sensitivity)
-sensitivity_feat_std(feat) = std(sensitivity)
-err_feat(feat) = mean(err)
-err_feat_std(feat) = std(err)
-bias_feat(feat) = mean(c)
-bias_feat_std(feat) = std(c)
+d_prime_feat(feat) = mean(d_prime);
+d_prime_feat_std(feat) = std(d_prime);
+sensitivity_feat(feat) = mean(sensitivity);
+sensitivity_feat_std(feat) = std(sensitivity);
+err_feat(feat) = mean(err);
+err_feat_std(feat) = std(err);
+bias_feat(feat) = mean(c);
+bias_feat_std(feat) = std(c);
+ppv_feat(feat) = mean(ppv);
+ppv_feat_std(feat) = std(ppv);
+npv_feat(feat) = mean(npv);
+npv_feat_std(feat) = std(npv);
+num_correct_feat(feat) = mean(num_correct);
+num_correct_feat_std(feat) = std(num_correct);
+num_total_feat(feat) = mean(num_total);
+num_total_feat_std(feat) = std(num_total);
 end
 finishing_beep(4,0,1);
 %%
